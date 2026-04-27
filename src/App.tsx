@@ -56,7 +56,12 @@ export function App() {
           const user = await dataService.getCurrentUser();
           setCurrentUser(user);
         } else {
-          setCurrentUser(null);
+          const localUser = await dataService.getCurrentUser();
+          if (localUser) {
+            setCurrentUser(localUser);
+          } else {
+            setCurrentUser(null);
+          }
         }
       } catch (err) {
         console.error("Auth state change error:", err);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { ShieldPlus, Edit2, Trash2, X, FileText, Mail } from 'lucide-react';
+import { ShieldPlus, Edit2, Trash2, X, FileText, Mail, CheckCircle2 } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import type { Product, Resguardo, Area } from '../types';
 import jsPDF from 'jspdf';
@@ -423,40 +423,77 @@ export function Resguardos() {
               <form onSubmit={handleSave}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}>
                   <div className="form-group">
-                    <label>Equipo(s) a Resguardar {editingId ? '' : '(Mantén pulsado Ctrl/Cmd para seleccionar varios)'}</label>
-                    <select
-                      className="form-control"
-                      required
-                      multiple={!editingId}
-                      value={editingId ? formData.productIds[0] : formData.productIds}
-                      onChange={e => {
-                        if (editingId) {
-                          setFormData({ ...formData, productIds: [e.target.value] });
-                        } else {
-                          const values = Array.from(e.target.selectedOptions, option => option.value);
-                          setFormData({ ...formData, productIds: values });
-                        }
-                      }}
-                      style={{ background: 'var(--color-bg-base)', minHeight: editingId ? 'auto' : '150px' }}
-                    >
-                      {!editingId && <option value="" disabled>Selecciona equipos...</option>}
-                      {editingId && <option value="">Selecciona un equipo...</option>}
-                      {
-                        products.filter(p => {
-                          // Allow if editing and this product belongs to the current resguardo
+                    <label>Equipo(s) a Resguardar {editingId ? '' : '(Haz clic para seleccionar o deseleccionar varios)'}</label>
+                    <div style={{ 
+                      background: 'var(--color-bg-base)', 
+                      border: '1px solid var(--color-border)', 
+                      borderRadius: 'var(--radius-md)', 
+                      maxHeight: '200px', 
+                      overflowY: 'auto',
+                      padding: '0.5rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.25rem'
+                    }}>
+                      {(() => {
+                        const availableProducts = products.filter(p => {
                           if (editingId && formData.productIds.includes(p.id)) return true;
-                          // Block if the product is in ANY active resguardo
                           const isAssigned = resguardos.some(r => 
                             r.status === 'ACTIVO' && 
-                            // Check if the product is in productIds or productId (legacy)
                             ((r.productIds && r.productIds.includes(p.id)) || r.productId === p.id) &&
-                            // Exclude the current editing resguardo from the block
                             r.id !== editingId
                           );
                           return !isAssigned;
-                        }).map(p => <option key={p.id} value={p.id}>{p.name} (Inv: {p.inventoryNumber || p.id.substring(0, 6)})</option>)
-                      }
-                    </select>
+                        });
+
+                        if (availableProducts.length === 0) {
+                           return <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--color-text-secondary)' }}>No hay equipos disponibles.</div>;
+                        }
+
+                        return availableProducts.map(p => {
+                          const isSelected = formData.productIds.includes(p.id);
+                          return (
+                            <div 
+                              key={p.id}
+                              onClick={() => {
+                                if (editingId) {
+                                  setFormData({ ...formData, productIds: [p.id] });
+                                } else {
+                                  if (isSelected) {
+                                    setFormData({ ...formData, productIds: formData.productIds.filter(id => id !== p.id) });
+                                  } else {
+                                    setFormData({ ...formData, productIds: [...formData.productIds, p.id] });
+                                  }
+                                }
+                              }}
+                              style={{
+                                padding: '0.6rem 0.75rem',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                background: isSelected ? 'var(--color-primary)' : 'transparent',
+                                color: isSelected ? 'white' : 'var(--color-text-primary)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                transition: 'all 0.2s',
+                                border: '1px solid',
+                                borderColor: isSelected ? 'var(--color-primary)' : 'transparent',
+                                fontSize: '0.9rem'
+                              }}
+                              onMouseEnter={(e) => {
+                                if (!isSelected) e.currentTarget.style.background = 'rgba(0, 0, 0, 0.05)';
+                              }}
+                              onMouseLeave={(e) => {
+                                if (!isSelected) e.currentTarget.style.background = 'transparent';
+                              }}
+                            >
+                              <span>{p.name} <span style={{opacity: 0.8, fontSize: '0.85em'}}>(Inv: {p.inventoryNumber || p.id.substring(0, 6)})</span></span>
+                              {isSelected && <CheckCircle2 size={16} />}
+                            </div>
+                          );
+                        });
+                      })()}
+                    </div>
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
