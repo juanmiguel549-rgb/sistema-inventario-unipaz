@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, ShieldCheck, Clock, Users, Contact, FileText, MapPin, List, Truck } from 'lucide-react';
+import { LayoutDashboard, Package, ShieldCheck, Clock, Users, Contact, FileText, MapPin, List, Truck, DatabaseBackup } from 'lucide-react';
 import type { User } from '../types';
 import './Sidebar.css';
 
@@ -22,6 +22,7 @@ export function Sidebar({ currentPath, onNavigate, currentUser }: SidebarProps) 
   ];
 
   if (currentUser.role === 'ADMIN') {
+    navItems.push({ path: '/backups', label: 'Respaldos Excel', icon: DatabaseBackup });
     navItems.push({ path: '/users', label: 'Usuarios', icon: Users });
   }
 

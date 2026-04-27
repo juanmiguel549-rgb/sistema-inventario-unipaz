@@ -11,6 +11,7 @@ import { Personnel } from './pages/Personnel';
 import { Invoices } from './pages/Invoices';
 import { Areas } from './pages/Areas';
 import { Providers } from './pages/Providers';
+import { Backups } from './pages/Backups';
 import { ConfirmLoan } from './pages/ConfirmLoan';
 import { ConfirmResguardo } from './pages/ConfirmResguardo';
 import { dataService } from './services/dataService';
@@ -127,6 +128,8 @@ export function App() {
         return <Areas />;
       case '/providers':
         return <Providers />;
+      case '/backups':
+        return currentUser.role === 'ADMIN' ? <Backups /> : <div style={{ padding: '2rem', textAlign: 'center' }}>Acceso denegado.</div>;
       case '/users':
         return currentUser.role === 'ADMIN' ? <Users /> : <div style={{ padding: '2rem', textAlign: 'center' }}>Acceso denegado. No tienes permisos de administrador.</div>;
       default:
