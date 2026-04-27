@@ -16,6 +16,7 @@ export function Resguardos() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [generatedLink, setGeneratedLink] = useState<{url: string, person: string, email?: string, products: string} | null>(null);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [productSearch, setProductSearch] = useState('');
 
   const [formData, setFormData] = useState({
     productIds: [] as string[], assignedTo: '', assignedEmail: '', department: '', location: '', status: 'ACTIVO' as 'ACTIVO' | 'DEVUELTO', notes: ''
@@ -43,6 +44,7 @@ export function Resguardos() {
   useEffect(() => { loadData(); }, []);
 
   const handleOpenModal = (resguardo?: Resguardo) => {
+    setProductSearch('');
     if (resguardo) {
       setEditingId(resguardo.id);
       setFormData({
@@ -460,31 +462,50 @@ export function Resguardos() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}>
                   <div className="form-group">
                     <label>Equipo(s) a Resguardar {editingId ? '' : '(Haz clic para seleccionar o deseleccionar varios)'}</label>
-                    <div style={{ 
-                      background: 'var(--color-bg-base)', 
-                      border: '1px solid var(--color-border)', 
-                      borderRadius: 'var(--radius-md)', 
-                      maxHeight: '200px', 
-                      overflowY: 'auto',
-                      padding: '0.5rem',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '0.25rem'
-                    }}>
-                      {(() => {
-                        const availableProducts = products.filter(p => {
-                          if (editingId && formData.productIds.includes(p.id)) return true;
-                          const isAssigned = resguardos.some(r => 
-                            r.status === 'ACTIVO' && 
-                            ((r.productIds && r.productIds.includes(p.id)) || r.productId === p.id) &&
-                            r.id !== editingId
-                          );
-                          return !isAssigned;
-                        });
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <input 
+                        type="text" 
+                        placeholder="Buscar por nombre, descripción o N° de inventario..." 
+                        value={productSearch}
+                        onChange={e => setProductSearch(e.target.value)}
+                        className="form-control"
+                        style={{ padding: '0.5rem', background: 'var(--color-bg-base)', border: '1px solid var(--color-border)' }}
+                      />
+                      <div style={{ 
+                        background: 'var(--color-bg-base)', 
+                        border: '1px solid var(--color-border)', 
+                        borderRadius: 'var(--radius-md)', 
+                        maxHeight: '200px', 
+                        overflowY: 'auto',
+                        padding: '0.5rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.25rem'
+                      }}>
+                        {(() => {
+                          let availableProducts = products.filter(p => {
+                            if (editingId && formData.productIds.includes(p.id)) return true;
+                            const isAssigned = resguardos.some(r => 
+                              r.status === 'ACTIVO' && 
+                              ((r.productIds && r.productIds.includes(p.id)) || r.productId === p.id) &&
+                              r.id !== editingId
+                            );
+                            return !isAssigned;
+                          });
 
-                        if (availableProducts.length === 0) {
-                           return <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--color-text-secondary)' }}>No hay equipos disponibles.</div>;
-                        }
+                          if (productSearch.trim()) {
+                            const searchLower = productSearch.toLowerCase();
+                            availableProducts = availableProducts.filter(p => 
+                              p.name.toLowerCase().includes(searchLower) || 
+                              (p.inventoryNumber && p.inventoryNumber.toLowerCase().includes(searchLower)) ||
+                              (p.description && p.description.toLowerCase().includes(searchLower)) ||
+                              (p.serialNumber && p.serialNumber.toLowerCase().includes(searchLower))
+                            );
+                          }
+
+                          if (availableProducts.length === 0) {
+                             return <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--color-text-secondary)' }}>No hay equipos disponibles o que coincidan con la búsqueda.</div>;
+                          }
 
                         return availableProducts.map(p => {
                           const isSelected = formData.productIds.includes(p.id);
@@ -530,6 +551,7 @@ export function Resguardos() {
                         });
                       })()}
                     </div>
+                  </div>
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
