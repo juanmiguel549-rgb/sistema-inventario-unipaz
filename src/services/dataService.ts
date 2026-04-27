@@ -1,4 +1,4 @@
-import type { Product, Transaction, Resguardo, TemporaryEquipment, User, Person, Invoice, Area } from '../types';
+import type { Product, Transaction, Resguardo, TemporaryEquipment, User, Person, Invoice, Area, Provider } from '../types';
 import { supabase } from '../lib/supabase';
 
 export const dataService = {
@@ -535,6 +535,29 @@ export const dataService = {
 
   deleteArea: async (id: string) => {
     const { error } = await supabase.from('areas').delete().eq('id', id);
+    if (error) throw error;
+  },
+
+  // === PROVIDERS ===
+  getProviders: async (): Promise<Provider[]> => {
+    const { data, error } = await supabase.from('providers').select('*').order('social_reason', { ascending: true });
+    if (error) throw error;
+    return data || [];
+  },
+
+  addProvider: async (provider: Omit<Provider, 'id'>): Promise<Provider> => {
+    const { data, error } = await supabase.from('providers').insert([provider]).select().single();
+    if (error) throw error;
+    return data;
+  },
+
+  updateProvider: async (id: string, updates: Partial<Provider>) => {
+    const { error } = await supabase.from('providers').update(updates).eq('id', id);
+    if (error) throw error;
+  },
+
+  deleteProvider: async (id: string) => {
+    const { error } = await supabase.from('providers').delete().eq('id', id);
     if (error) throw error;
   }
 };

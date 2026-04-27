@@ -35,6 +35,7 @@ export interface Invoice {
   fileName: string;
   fileBase64: string;
   notes?: string;
+  providerId?: string;
 }
 
 export type TransactionType = 'IN' | 'OUT';
@@ -90,4 +91,12 @@ export interface Area {
   id: string;
   name: string;
   locations: string[];
+}
+
+export interface Provider {
+  id: string;
+  rfc: string;
+  social_reason: string;
+  address?: string;
+  postal_code?: string;
 }

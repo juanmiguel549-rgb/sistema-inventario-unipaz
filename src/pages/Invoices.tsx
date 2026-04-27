@@ -2,13 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { FileText, Plus, Trash2, X, Download, FileUp } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { dataService } from '../services/dataService';
-import type { Invoice, Resguardo, Product } from '../types';
+import type { Invoice, Resguardo, Product, Provider } from '../types';
 import './Products.css';
 
 export function Invoices() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [resguardos, setResguardos] = useState<Resguardo[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
+  const [providers, setProviders] = useState<Provider[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [pdfViewerOpen, setPdfViewerOpen] = useState<string | null>(null);
 
@@ -18,19 +18,22 @@ export function Invoices() {
     fileName: string;
     fileBase64: string;
     fileObject?: File;
-  }>({ title: '', notes: '', fileName: '', fileBase64: '' });
+    providerId: string;
+  }>({ title: '', notes: '', fileName: '', fileBase64: '', providerId: '' });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadData = async () => {
     try {
-      const [dbInvoices, dbResguardos, dbProducts] = await Promise.all([
+      const [dbInvoices, dbResguardos, dbProducts, dbProviders] = await Promise.all([
         dataService.getInvoices(),
         dataService.getResguardos(),
-        dataService.getProducts()
+        dataService.getProducts(),
+        dataService.getProviders()
       ]);
       setInvoices(dbInvoices);
       setResguardos(dbResguardos);
       setProducts(dbProducts);
+      setProviders(dbProviders);
     } catch (error) {
       console.error('Error loading invoices data:', error);
     }
@@ -41,7 +44,7 @@ export function Invoices() {
   }, []);
 
   const handleOpenModal = () => {
-    setFormData({ title: '', notes: '', fileName: '', fileBase64: '', fileObject: undefined });
+    setFormData({ title: '', notes: '', fileName: '', fileBase64: '', fileObject: undefined, providerId: '' });
     setIsModalOpen(true);
   };
 
@@ -85,7 +88,8 @@ export function Invoices() {
         title: formData.title,
         notes: formData.notes,
         fileName: formData.fileName,
-        fileBase64: formData.fileBase64 || ''
+        fileBase64: formData.fileBase64 || '',
+        providerId: formData.providerId || undefined
       }, formData.fileObject);
       
       await loadData();
@@ -145,6 +149,11 @@ export function Invoices() {
                 </p>
               </div>
             </div>
+            {inv.providerId && (
+              <div style={{ fontSize: '0.8rem', color: 'var(--color-primary)', background: 'rgba(56, 189, 248, 0.1)', padding: '0.25rem 0.5rem', borderRadius: '4px', width: 'fit-content' }}>
+                🏢 Proveedor: {providers.find(p => p.id === inv.providerId)?.social_reason || 'Desconocido'}
+              </div>
+            )}
             {inv.notes && (
               <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', background: 'var(--color-bg-base)', padding: '0.5rem', borderRadius: '4px' }}>
                 {inv.notes}
@@ -200,6 +209,21 @@ export function Invoices() {
                         </option>
                       );
                     })}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Proveedor</label>
+                  <select 
+                    className="form-control" 
+                    value={formData.providerId} 
+                    onChange={e => setFormData({ ...formData, providerId: e.target.value })}
+                  >
+                    <option value="">No asociado / Ninguno</option>
+                    {providers.map(p => (
+                      <option key={p.id} value={p.id}>
+                        {p.social_reason} (RFC: {p.rfc})
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div className="form-group">

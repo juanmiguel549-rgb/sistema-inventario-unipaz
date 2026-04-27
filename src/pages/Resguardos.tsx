@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { ShieldPlus, Edit2, Trash2, X, FileText, Mail, CheckCircle2 } from 'lucide-react';
+import { ShieldPlus, Edit2, Trash2, X, FileText, Mail, CheckCircle2, ArrowRightLeft } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import type { Product, Resguardo, Area } from '../types';
 import jsPDF from 'jspdf';
@@ -14,6 +14,7 @@ export function Resguardos() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [reassigningFromId, setReassigningFromId] = useState<string | null>(null);
   const [generatedLink, setGeneratedLink] = useState<{url: string, person: string, email?: string, products: string} | null>(null);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [productSearch, setProductSearch] = useState('');
@@ -43,18 +44,29 @@ export function Resguardos() {
 
   useEffect(() => { loadData(); }, []);
 
-  const handleOpenModal = (resguardo?: Resguardo) => {
+  const handleOpenModal = (resguardo?: Resguardo, isReassigning = false) => {
     setProductSearch('');
-    if (resguardo) {
+    if (resguardo && !isReassigning) {
       setEditingId(resguardo.id);
+      setReassigningFromId(null);
       setFormData({
         productIds: resguardo.productIds && resguardo.productIds.length > 0 ? resguardo.productIds : (resguardo.productId ? [resguardo.productId] : []),
         assignedTo: resguardo.assignedTo,
         assignedEmail: resguardo.assignedEmail || '', department: resguardo.department,
         location: resguardo.location, status: resguardo.status, notes: resguardo.notes || ''
       });
+    } else if (resguardo && isReassigning) {
+      setEditingId(null);
+      setReassigningFromId(resguardo.id);
+      setFormData({
+        productIds: resguardo.productIds && resguardo.productIds.length > 0 ? resguardo.productIds : (resguardo.productId ? [resguardo.productId] : []),
+        assignedTo: '',
+        assignedEmail: '', department: '',
+        location: '', status: 'ACTIVO', notes: `Reasignado desde el resguardo anterior de ${resguardo.assignedTo}`
+      });
     } else {
       setEditingId(null);
+      setReassigningFromId(null);
       setFormData({ productIds: [], assignedTo: '', assignedEmail: '', department: '', location: '', status: 'ACTIVO', notes: '' });
     }
     setIsModalOpen(true);
@@ -63,6 +75,7 @@ export function Resguardos() {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingId(null);
+    setReassigningFromId(null);
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -74,11 +87,12 @@ export function Resguardos() {
 
     try {
       if (editingId) {
-        // For editing, we only edit one at a time so we take the first selected product
         await dataService.updateResguardo(editingId, { ...formData, productId: formData.productIds[0] });
       } else {
-        // Create a single resguardo containing multiple product IDs
         await dataService.addResguardo({ ...formData, productIds: formData.productIds, productId: formData.productIds[0] });
+        if (reassigningFromId) {
+          await dataService.updateResguardo(reassigningFromId, { status: 'DEVUELTO' });
+        }
       }
       await loadData();
       handleCloseModal();
@@ -431,6 +445,9 @@ export function Resguardos() {
                     <button className="icon-btn" onClick={() => generateLink(r)} title="Generar Link de Confirmación">
                       <Mail size={16} />
                     </button>
+                    <button className="icon-btn edit" onClick={() => handleOpenModal(r, true)} title="Reasignar a otro personal" style={{ color: '#8b5cf6' }}>
+                      <ArrowRightLeft size={16} />
+                    </button>
                     <button className="icon-btn edit" onClick={() => handleOpenModal(r)} title="Editar">
                       <Edit2 size={16} />
                     </button>
@@ -484,11 +501,12 @@ export function Resguardos() {
                       }}>
                         {(() => {
                           let availableProducts = products.filter(p => {
-                            if (editingId && formData.productIds.includes(p.id)) return true;
+                            if ((editingId || reassigningFromId) && formData.productIds.includes(p.id)) return true;
                             const isAssigned = resguardos.some(r => 
                               r.status === 'ACTIVO' && 
                               ((r.productIds && r.productIds.includes(p.id)) || r.productId === p.id) &&
-                              r.id !== editingId
+                              r.id !== editingId &&
+                              r.id !== reassigningFromId
                             );
                             return !isAssigned;
                           });

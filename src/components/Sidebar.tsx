@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, ShieldCheck, Clock, Users, Contact, FileText, MapPin, List } from 'lucide-react';
+import { LayoutDashboard, Package, ShieldCheck, Clock, Users, Contact, FileText, MapPin, List, Truck } from 'lucide-react';
 import type { User } from '../types';
 import './Sidebar.css';
 
@@ -16,6 +16,7 @@ export function Sidebar({ currentPath, onNavigate, currentUser }: SidebarProps) 
     { path: '/temporal', label: 'Equipos Temporales', icon: Clock },
     { path: '/active-loans', label: 'Historial de Prestamos Temp.', icon: List },
     { path: '/invoices', label: 'Facturas PDF', icon: FileText },
+    { path: '/providers', label: 'Proveedores', icon: Truck },
     { path: '/personnel', label: 'Personal Institucional', icon: Contact },
     { path: '/areas', label: 'Áreas', icon: MapPin },
   ];
