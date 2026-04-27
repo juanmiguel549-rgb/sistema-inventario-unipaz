@@ -5,6 +5,8 @@ import { dataService } from '../services/dataService';
 import type { Product, Resguardo, Area } from '../types';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import emailjs from '@emailjs/browser';
+import { EMAIL_CONFIG } from '../lib/emailConfig';
 import './Products.css';
 
 export function Resguardos() {
@@ -13,6 +15,7 @@ export function Resguardos() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [generatedLink, setGeneratedLink] = useState<{url: string, person: string, email?: string, products: string} | null>(null);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   const [formData, setFormData] = useState({
     productIds: [] as string[], assignedTo: '', assignedEmail: '', department: '', location: '', status: 'ACTIVO' as 'ACTIVO' | 'DEVUELTO', notes: ''
@@ -331,6 +334,39 @@ export function Resguardos() {
     });
   };
 
+  const handleSendEmail = async () => {
+    if (!generatedLink || !generatedLink.email) return;
+    
+    if (!EMAIL_CONFIG.SERVICE_ID || !EMAIL_CONFIG.TEMPLATE_ID || !EMAIL_CONFIG.PUBLIC_KEY) {
+      alert("Faltan las claves de configuración de EmailJS. Por favor, añádelas en src/lib/emailConfig.ts");
+      return;
+    }
+
+    setIsSendingEmail(true);
+    try {
+      const templateParams = {
+        to_email: generatedLink.email,
+        to_name: generatedLink.person,
+        equipos: generatedLink.products,
+        link_confirmacion: generatedLink.url
+      };
+
+      await emailjs.send(
+        EMAIL_CONFIG.SERVICE_ID,
+        EMAIL_CONFIG.TEMPLATE_ID,
+        templateParams,
+        EMAIL_CONFIG.PUBLIC_KEY
+      );
+
+      alert("¡Correo enviado exitosamente de forma automática!");
+    } catch (error) {
+      console.error("Error enviando correo:", error);
+      alert("Hubo un error al enviar el correo. Revisa la consola para más detalles.");
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
   return (
     <div className="animate-fade-in">
       <div className="page-header">
@@ -634,14 +670,15 @@ export function Resguardos() {
                   Copiar Enlace
                 </button>
                 {generatedLink.email && (
-                  <a 
+                  <button 
                     className="btn-primary" 
-                    href={`mailto:${generatedLink.email}?subject=Firma Electrónica: Resguardo de Equipo UNIPAZ&body=Hola ${encodeURIComponent(generatedLink.person)},%0D%0A%0D%0ASe te ha asignado un resguardo de equipo en el Sistema de Inventarios UNIPAZ.%0D%0A%0D%0AEquipos: ${encodeURIComponent(generatedLink.products)}%0D%0A%0D%0APor favor ingresa al siguiente enlace para validar y otorgar tu firma electrónica de aceptación:%0D%0A${encodeURIComponent(generatedLink.url)}%0D%0A%0D%0AGracias.`}
-                    style={{ flex: 1, minWidth: '150px', justifyContent: 'center', background: 'var(--color-success)', textDecoration: 'none', display: 'flex', alignItems: 'center' }}
+                    onClick={handleSendEmail}
+                    disabled={isSendingEmail}
+                    style={{ flex: 1, minWidth: '150px', justifyContent: 'center', background: 'var(--color-success)', opacity: isSendingEmail ? 0.7 : 1 }}
                   >
                     <Mail size={18} style={{ marginRight: '8px' }} />
-                    Enviar a Firma
-                  </a>
+                    {isSendingEmail ? 'Enviando...' : 'Enviar a Firma Automático'}
+                  </button>
                 )}
                 <button className="btn-secondary" onClick={() => setGeneratedLink(null)} style={{ flex: 1, minWidth: '150px', justifyContent: 'center' }}>
                   Cerrar
