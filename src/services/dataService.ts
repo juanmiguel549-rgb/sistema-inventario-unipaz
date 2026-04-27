@@ -465,7 +465,10 @@ export const dataService = {
   getInvoices: async (): Promise<Invoice[]> => {
     const { data, error } = await supabase.from('invoices').select('*').order('uploadDate', { ascending: false });
     if (error) throw error;
-    return data || [];
+    return (data || []).map(inv => ({
+      ...inv,
+      providerId: inv.provider_id
+    }));
   },
 
   addInvoice: async (invoice: Omit<Invoice, 'id' | 'uploadDate'>, fileObj?: File): Promise<Invoice> => {
@@ -491,8 +494,10 @@ export const dataService = {
       fileUrl = publicUrlData.publicUrl;
     }
 
+    const { providerId, ...restInvoice } = invoice;
     const { data, error } = await supabase.from('invoices').insert([{
-      ...invoice,
+      ...restInvoice,
+      provider_id: providerId,
       fileBase64: fileUrl // Storing the public URL instead of base64
     }]).select().single();
     if (error) throw error;
