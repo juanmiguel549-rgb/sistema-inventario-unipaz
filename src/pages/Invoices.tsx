@@ -8,6 +8,7 @@ import './Products.css';
 export function Invoices() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [resguardos, setResguardos] = useState<Resguardo[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [providers, setProviders] = useState<Provider[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [pdfViewerOpen, setPdfViewerOpen] = useState<string | null>(null);
