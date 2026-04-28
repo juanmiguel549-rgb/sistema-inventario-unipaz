@@ -467,7 +467,8 @@ export const dataService = {
     if (error) throw error;
     return (data || []).map(inv => ({
       ...inv,
-      providerId: inv.provider_id
+      providerId: inv.provider_id,
+      productId: inv.product_id
     }));
   },
 
@@ -494,10 +495,11 @@ export const dataService = {
       fileUrl = publicUrlData.publicUrl;
     }
 
-    const { providerId, ...restInvoice } = invoice;
+    const { providerId, productId, ...restInvoice } = invoice;
     const { data, error } = await supabase.from('invoices').insert([{
       ...restInvoice,
       provider_id: providerId,
+      product_id: productId,
       fileBase64: fileUrl // Storing the public URL instead of base64
     }]).select().single();
     if (error) throw error;

@@ -7,7 +7,6 @@ import './Products.css';
 
 export function Invoices() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [resguardos, setResguardos] = useState<Resguardo[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [providers, setProviders] = useState<Provider[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -20,19 +19,18 @@ export function Invoices() {
     fileBase64: string;
     fileObject?: File;
     providerId: string;
-  }>({ title: '', notes: '', fileName: '', fileBase64: '', providerId: '' });
+    productId: string;
+  }>({ title: '', notes: '', fileName: '', fileBase64: '', providerId: '', productId: '' });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadData = async () => {
     try {
-      const [dbInvoices, dbResguardos, dbProducts, dbProviders] = await Promise.all([
+      const [dbInvoices, dbProducts, dbProviders] = await Promise.all([
         dataService.getInvoices(),
-        dataService.getResguardos(),
         dataService.getProducts(),
         dataService.getProviders()
       ]);
       setInvoices(dbInvoices);
-      setResguardos(dbResguardos);
       setProducts(dbProducts);
       setProviders(dbProviders);
     } catch (error) {
@@ -45,7 +43,7 @@ export function Invoices() {
   }, []);
 
   const handleOpenModal = () => {
-    setFormData({ title: '', notes: '', fileName: '', fileBase64: '', fileObject: undefined, providerId: '' });
+    setFormData({ title: '', notes: '', fileName: '', fileBase64: '', fileObject: undefined, providerId: '', productId: '' });
     setIsModalOpen(true);
   };
 
@@ -90,7 +88,8 @@ export function Invoices() {
         notes: formData.notes,
         fileName: formData.fileName,
         fileBase64: formData.fileBase64 || '',
-        providerId: formData.providerId || undefined
+        providerId: formData.providerId || undefined,
+        productId: formData.productId || undefined
       }, formData.fileObject);
       
       await loadData();
@@ -150,6 +149,11 @@ export function Invoices() {
                 </p>
               </div>
             </div>
+            {inv.productId && (
+              <div style={{ fontSize: '0.8rem', color: 'var(--color-primary)', background: 'rgba(56, 189, 248, 0.1)', padding: '0.25rem 0.5rem', borderRadius: '4px', width: 'fit-content' }}>
+                💻 Equipo: {products.find(p => p.id === inv.productId)?.inventoryNumber || ''} - {products.find(p => p.id === inv.productId)?.name || 'Desconocido'}
+              </div>
+            )}
             {inv.providerId && (
               <div style={{ fontSize: '0.8rem', color: 'var(--color-primary)', background: 'rgba(56, 189, 248, 0.1)', padding: '0.25rem 0.5rem', borderRadius: '4px', width: 'fit-content' }}>
                 🏢 Proveedor: {providers.find(p => p.id === inv.providerId)?.social_reason || 'Desconocido'}
@@ -191,25 +195,29 @@ export function Invoices() {
             <form onSubmit={handleSave}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}>
                 <div className="form-group">
-                  <label>Resguardo Vinculado</label>
-                  <select 
+                  <label>Título de Factura</label>
+                  <input 
+                    type="text"
                     className="form-control" 
                     required 
+                    placeholder="Ej. Compra de Laptops 2024"
                     value={formData.title} 
                     onChange={e => setFormData({ ...formData, title: e.target.value })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Equipo Vinculado (No. Inventario)</label>
+                  <select 
+                    className="form-control" 
+                    value={formData.productId} 
+                    onChange={e => setFormData({ ...formData, productId: e.target.value })}
                   >
-                    <option value="" disabled>Selecciona a qué Resguardo Fijo pertenece...</option>
-                    {resguardos.map(r => {
-                      const activeProductIds = (r.productIds && r.productIds.length > 0) ? r.productIds : (r.productId ? [r.productId] : []);
-                      const firstProductName = activeProductIds.length > 0 ? (products.find(p => p.id === activeProductIds[0])?.name || 'Desconocido') : 'Sin equipo';
-                      const resguardoTitle = `Resguardo: ${r.assignedTo} (${r.status}) - ${firstProductName}${activeProductIds.length > 1 ? ' y más...' : ''}`;
-                      
-                      return (
-                        <option key={r.id} value={resguardoTitle}>
-                          {resguardoTitle}
-                        </option>
-                      );
-                    })}
+                    <option value="">Ninguno / Múltiples</option>
+                    {products.map(p => (
+                      <option key={p.id} value={p.id}>
+                        {p.inventoryNumber ? `[${p.inventoryNumber}] ` : ''}{p.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div className="form-group">

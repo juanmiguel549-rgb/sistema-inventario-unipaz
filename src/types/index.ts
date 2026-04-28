@@ -36,6 +36,7 @@ export interface Invoice {
   fileBase64: string;
   notes?: string;
   providerId?: string;
+  productId?: string;
 }
 
 export type TransactionType = 'IN' | 'OUT';
