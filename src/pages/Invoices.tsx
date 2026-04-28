@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { FileText, Plus, Trash2, X, Download, FileUp } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { dataService } from '../services/dataService';
-import type { Invoice, Resguardo, Product, Provider } from '../types';
+import type { Invoice, Product, Provider } from '../types';
 import './Products.css';
 
 export function Invoices() {
