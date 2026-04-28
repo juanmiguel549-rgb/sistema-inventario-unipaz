@@ -11,6 +11,7 @@ export function Invoices() {
   const [providers, setProviders] = useState<Provider[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [pdfViewerOpen, setPdfViewerOpen] = useState<string | null>(null);
+  const [productSearch, setProductSearch] = useState('');
 
   const [formData, setFormData] = useState<{
     title: string;
@@ -43,6 +44,7 @@ export function Invoices() {
   }, []);
 
   const handleOpenModal = () => {
+    setProductSearch('');
     setFormData({ title: '', notes: '', fileName: '', fileBase64: '', fileObject: undefined, providerId: '', productId: '' });
     setIsModalOpen(true);
   };
@@ -206,19 +208,84 @@ export function Invoices() {
                   />
                 </div>
                 <div className="form-group">
-                  <label>Equipo Vinculado (No. Inventario)</label>
-                  <select 
-                    className="form-control" 
-                    value={formData.productId} 
-                    onChange={e => setFormData({ ...formData, productId: e.target.value })}
-                  >
-                    <option value="">Ninguno / Múltiples</option>
-                    {products.map(p => (
-                      <option key={p.id} value={p.id}>
-                        {p.inventoryNumber ? `[${p.inventoryNumber}] ` : ''}{p.name}
-                      </option>
-                    ))}
-                  </select>
+                  <label>Equipo Vinculado</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <input 
+                      type="text" 
+                      placeholder="Buscar por nombre o N° de inventario..." 
+                      value={productSearch}
+                      onChange={e => setProductSearch(e.target.value)}
+                      className="form-control"
+                      style={{ padding: '0.5rem', background: 'var(--color-bg-base)', border: '1px solid var(--color-border)' }}
+                    />
+                    <div style={{ 
+                      background: 'var(--color-bg-base)', 
+                      border: '1px solid var(--color-border)', 
+                      borderRadius: 'var(--radius-md)', 
+                      maxHeight: '180px', 
+                      overflowY: 'auto',
+                      padding: '0.5rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.25rem'
+                    }}>
+                      <div
+                        onClick={() => setFormData({ ...formData, productId: '' })}
+                        style={{
+                          padding: '0.6rem 0.75rem',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          background: formData.productId === '' ? 'var(--color-primary)' : 'transparent',
+                          color: formData.productId === '' ? 'white' : 'var(--color-text-primary)',
+                          fontSize: '0.9rem',
+                          border: '1px solid transparent'
+                        }}
+                      >
+                        Ninguno / No asociado
+                      </div>
+                      {(() => {
+                        let availableProducts = products;
+                        if (productSearch.trim()) {
+                          const searchLower = productSearch.toLowerCase();
+                          availableProducts = availableProducts.filter(p => 
+                            p.name.toLowerCase().includes(searchLower) || 
+                            (p.inventoryNumber && p.inventoryNumber.toLowerCase().includes(searchLower)) ||
+                            (p.serialNumber && p.serialNumber.toLowerCase().includes(searchLower))
+                          );
+                        }
+
+                        if (availableProducts.length === 0) {
+                           return <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--color-text-secondary)' }}>No se encontraron equipos.</div>;
+                        }
+
+                        return availableProducts.map(p => {
+                          const isSelected = formData.productId === p.id;
+                          return (
+                            <div 
+                              key={p.id}
+                              onClick={() => setFormData({ ...formData, productId: p.id })}
+                              style={{
+                                padding: '0.6rem 0.75rem',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                background: isSelected ? 'var(--color-primary)' : 'transparent',
+                                color: isSelected ? 'white' : 'var(--color-text-primary)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                border: '1px solid',
+                                borderColor: isSelected ? 'var(--color-primary)' : 'transparent',
+                                fontSize: '0.9rem'
+                              }}
+                            >
+                              <span>{p.name} <span style={{opacity: 0.8, fontSize: '0.85em'}}>(Inv: {p.inventoryNumber || p.id.substring(0, 6)})</span></span>
+                              {isSelected && <span style={{fontWeight: 'bold'}}>✓</span>}
+                            </div>
+                          );
+                        });
+                      })()}
+                    </div>
+                  </div>
                 </div>
                 <div className="form-group">
                   <label>Proveedor</label>
